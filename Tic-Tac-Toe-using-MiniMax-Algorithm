@@ -1,0 +1,155 @@
+import sys
+
+# Define characters for players
+HUMAN = "X"
+AI = "O"
+EMPTY = " "
+
+
+def print_board(board):
+    """Renders the current 3x3 board to the console."""
+    print("\n")
+    for i, row in enumerate(board):
+        print(f" {row[0]} | {row[1]} | {row[2]} ")
+        if i < 2:
+            print("---+---+---")
+    print("\n")
+
+
+def check_winner(board):
+    """Checks for a winner. Returns 'X', 'O', 'Tie', or None if incomplete."""
+    # Check rows and columns
+    for i in range(3):
+        if board[i][0] == board[i][1] == board[i][2] != EMPTY:
+            return board[i][0]
+        if board[0][i] == board[1][i] == board[2][i] != EMPTY:
+            return board[0][i]
+
+    # Check diagonals
+    if board[0][0] == board[1][1] == board[2][2] != EMPTY:
+        return board[0][0]
+    if board[0][2] == board[1][1] == board[2][0] != EMPTY:
+        return board[0][2]
+
+    # Check for empty spaces (game in progress)
+    for row in board:
+        if EMPTY in row:
+            return None
+
+    return "Tie"
+
+
+def minimax(board, is_maximizing):
+    """Core Minimax Algorithm to evaluate the utility of future states."""
+    result = check_winner(board)
+
+    # Base cases: return static scores based on terminal states
+    if result == AI:
+        return 1
+    if result == HUMAN:
+        return -1
+    if result == "Tie":
+        return 0
+
+    if is_maximizing:
+        best_score = -float("inf")
+        for r in range(3):
+            for c in range(3):
+                if board[r][c] == EMPTY:
+                    board[r][c] = AI
+                    score = minimax(board, False)
+                    board[r][c] = EMPTY  # Undo move
+                    best_score = max(score, best_score)
+        return best_score
+    else:
+        best_score = float("inf")
+        for r in range(3):
+            for c in range(3):
+                if board[r][c] == EMPTY:
+                    board[r][c] = HUMAN
+                    score = minimax(board, True)
+                    board[r][c] = EMPTY  # Undo move
+                    best_score = min(score, best_score)
+        return best_score
+
+
+def get_ai_move(board):
+    """Iterates over choices to pick the move yielding the highest minimax score."""
+    best_score = -float("inf")
+    best_move = None
+
+    for r in range(3):
+        for c in range(3):
+            if board[r][c] == EMPTY:
+                board[r][c] = AI
+                move_score = minimax(board, False)
+                board[r][c] = EMPTY  # Undo move
+
+                if move_score > best_score:
+                    best_score = move_score
+                    best_move = (r, c)
+    return best_move
+
+
+def get_human_move(board):
+    """Handles and validates text input from the human player."""
+    while True:
+        try:
+            move = input("Enter your move (1-9): ").strip()
+            if move.lower() == "exit":
+                print("Game exited. Thanks for playing!")
+                sys.exit()
+
+            val = int(move) - 1
+            if val < 0 or val > 8:
+                raise ValueError
+
+            row, col = val // 3, val % 3
+            if board[row][col] != EMPTY:
+                print("That square is already taken. Try again.")
+                continue
+
+            return row, col
+        except ValueError:
+            print("Invalid input. Please enter a number between 1 and 9.")
+
+
+def main():
+    """Initializes and runs the main human vs AI gameplay loop."""
+    print("=== Welcome to Tic-Tac-Toe (Human vs Unbeatable AI) ===")
+    print("Positions are mapped on the grid as numbers 1 through 9:")
+    print(" 1 | 2 | 3 \n---+---+---\n 4 | 5 | 6 \n---+---+---\n 7 | 8 | 9 ")
+    print("Type 'exit' at any prompt to quit the game.")
+
+    # Initialize empty board
+    board = [[EMPTY for _ in range(3)] for _ in range(3)]
+
+    # Human starts first (X), AI follows (O)
+    current_turn = HUMAN
+
+    while True:
+        print_board(board)
+        winner = check_winner(board)
+
+        if winner:
+            if winner == "Tie":
+                print("It's a draw! Well played.")
+            else:
+                print(f"Game Over! Player {winner} wins!")
+            break
+
+        if current_turn == HUMAN:
+            print("Your turn (X)...")
+            r, c = get_human_move(board)
+            board[r][c] = HUMAN
+            current_turn = AI
+        else:
+            print("AI is calculating the optimal move (O)...")
+            r, c = get_ai_move(board)
+            if r is not None and c is not None:
+                board[r][c] = AI
+            current_turn = HUMAN
+
+
+if __name__ == "__main__":
+    main()
